@@ -7,7 +7,10 @@ body {
  background-position: center; /* Center the image */
  background-repeat: no-repeat; /* Do not repeat the image */
  background-size: cover;
+background-repeat: repeat; 
  padding-top: 300px;
+ animation: panning 50s infinite ease-in-out;
+ background-size: 200%;
  image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
     image-rendering: -moz-crisp-edges;          /* Firefox                        */
     image-rendering: -o-crisp-edges;            /* Opera                          */
@@ -15,6 +18,29 @@ body {
     image-rendering: pixelated; /* Chrome */
     image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
     -ms-interpolation-mode: nearest-neighbor;
+}
+
+@keyframes panning {
+  0% {
+    background-position: 0% 0%;
+	filter: hue-rotate(0deg);   
+  }
+  25% {
+    background-position: 100% 100%;
+  }
+   50% {
+    background-position: 100% 0%;
+    background-size: 10%;
+	filter: hue-rotate(180deg);    
+  }
+  75% {
+    background-position: 0 100%;
+  }
+  200% {
+    background-position: 0 0;
+	filter: hue-rotate(360deg);   
+    
+  }
 }
 </style>
 </head>
