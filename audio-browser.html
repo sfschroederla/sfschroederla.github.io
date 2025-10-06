@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio File Browser</title>
+    <style>
+        a:link {
+            color: white;
+        }
+        a:visited {
+            color: white;
+        }
+        a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+        a:active {
+            color: white;
+        }
+        
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-image: url("space-16bit.png");
+            background-color: #000000;
+            background-position: center;
+            background-repeat: repeat;
+            background-size: 200%;
+            padding-top: 40px;
+            animation: panning 50s infinite ease-in-out;
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -o-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: pixelated;
+            image-rendering: optimize-contrast;
+            -ms-interpolation-mode: nearest-neighbor;
+        }
+
+        @keyframes panning {
+            0% {
+                background-position: 0% 0%;
+                filter: hue-rotate(0deg);
+            }
+            25% {
+                background-position: 100% 100%;
+            }
+            50% {
+                background-position: 100% 0%;
+                background-size: 10%;
+                filter: hue-rotate(180deg);
+            }
+            75% {
+                background-position: 0 100%;
+            }
+            200% {
+                background-position: 0 0;
+                filter: hue-rotate(360deg);
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 30px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .audio-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .audio-table thead {
+            background-color: rgba(0, 100, 200, 0.5);
+        }
+
+        .audio-table th {
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-size: 16px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .audio-table tbody tr {
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .audio-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .audio-table tbody tr.playing {
+            background-color: rgba(0, 150, 255, 0.3);
+        }
+
+        .audio-table td {
+            color: white;
+            padding: 15px;
+            font-size: 14px;
+        }
+
+        .waveform-cell {
+            width: 400px;
+        }
+
+        .waveform-canvas {
+            width: 100%;
+            height: 60px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .controls button {
+            background-color: rgba(0, 100, 200, 0.7);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .controls button:hover {
+            background-color: rgba(0, 150, 255, 0.9);
+        }
+
+        .controls input[type="file"] {
+            display: none;
+        }
+
+        .file-input-label {
+            background-color: rgba(0, 100, 200, 0.7);
+            color: white;
+            padding: 10px 20px;
+            margin: 0 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+
+        .file-input-label:hover {
+            background-color: rgba(0, 150, 255, 0.9);
+        }
+
+        .status {
+            color: white;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .back-link a:hover {
+            background-color: rgba(0, 100, 200, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Audio File Browser</h1>
+        
+        <div class="controls">
+            <label for="audioFiles" class="file-input-label">Load Audio Files</label>
+            <input type="file" id="audioFiles" accept="audio/*" multiple>
+            <button id="stopBtn">Stop All</button>
+        </div>
+
+        <div class="status" id="status">
+            Load audio files to begin
+        </div>
+
+        <table class="audio-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Duration</th>
+                    <th class="waveform-cell">Waveform</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="audioList">
+                <!-- Audio files will be inserted here -->
+            </tbody>
+        </table>
+
+        <div class="back-link">
+            <a href="index.html">← Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+        const audioList = document.getElementById('audioList');
+        const audioFilesInput = document.getElementById('audioFiles');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDiv = document.getElementById('status');
+        
+        let currentAudio = null;
+        let audioElements = [];
+        let audioContexts = [];
+
+        // Sample audio files for demonstration
+        const sampleAudios = [
+            { name: 'Sample 1', url: null, duration: '0:00' },
+            { name: 'Sample 2', url: null, duration: '0:00' },
+            { name: 'Sample 3', url: null, duration: '0:00' }
+        ];
+
+        // Initialize with sample entries
+        function initializeSamples() {
+            sampleAudios.forEach((sample, index) => {
+                addAudioRow(sample.name, sample.url, sample.duration, index);
+            });
+            statusDiv.textContent = 'Load your own audio files or use the sample entries';
+        }
+
+        // File input handler
+        audioFilesInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            if (files.length === 0) return;
+            
+            // Clear existing rows
+            audioList.innerHTML = '';
+            audioElements = [];
+            audioContexts = [];
+            
+            files.forEach((file, index) => {
+                const url = URL.createObjectURL(file);
+                const audio = new Audio(url);
+                
+                audio.addEventListener('loadedmetadata', function() {
+                    const duration = formatDuration(audio.duration);
+                    addAudioRow(file.name, url, duration, index);
+                    
+                    if (index === files.length - 1) {
+                        statusDiv.textContent = `Loaded ${files.length} audio file(s)`;
+                    }
+                });
+            });
+        });
+
+        // Format duration from seconds to MM:SS
+        function formatDuration(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Add audio row to table
+        function addAudioRow(name, url, duration, index) {
+            const row = document.createElement('tr');
+            row.dataset.index = index;
+            
+            const nameCell = document.createElement('td');
+            nameCell.textContent = name;
+            
+            const durationCell = document.createElement('td');
+            durationCell.textContent = duration;
+            
+            const waveformCell = document.createElement('td');
+            waveformCell.className = 'waveform-cell';
+            const canvas = document.createElement('canvas');
+            canvas.className = 'waveform-canvas';
+            canvas.width = 400;
+            canvas.height = 60;
+            waveformCell.appendChild(canvas);
+            
+            const statusCell = document.createElement('td');
+            statusCell.textContent = '⏸️ Ready';
+            statusCell.id = `status-${index}`;
+            
+            row.appendChild(nameCell);
+            row.appendChild(durationCell);
+            row.appendChild(waveformCell);
+            row.appendChild(statusCell);
+            
+            audioList.appendChild(row);
+            
+            // Draw waveform
+            if (url) {
+                drawWaveform(canvas, url, index);
+            } else {
+                drawPlaceholderWaveform(canvas);
+            }
+            
+            // Click handler
+            row.addEventListener('click', function() {
+                if (url) {
+                    playAudio(url, index, row);
+                } else {
+                    statusDiv.textContent = 'Please load audio files first';
+                }
+            });
+        }
+
+        // Draw placeholder waveform
+        function drawPlaceholderWaveform(canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(0, 150, 255, 0.5)';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x += 5) {
+                const height = Math.random() * canvas.height * 0.7;
+                const y = (canvas.height - height) / 2;
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y + height);
+            }
+            ctx.stroke();
+        }
+
+        // Draw waveform using Web Audio API
+        function drawWaveform(canvas, url, index) {
+            const ctx = canvas.getContext('2d');
+            
+            fetch(url)
+                .then(response => response.arrayBuffer())
+                .then(arrayBuffer => {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    audioContexts[index] = audioContext;
+                    
+                    return audioContext.decodeAudioData(arrayBuffer);
+                })
+                .then(audioBuffer => {
+                    const rawData = audioBuffer.getChannelData(0);
+                    const samples = 100;
+                    const blockSize = Math.floor(rawData.length / samples);
+                    const filteredData = [];
+                    
+                    for (let i = 0; i < samples; i++) {
+                        let blockStart = blockSize * i;
+                        let sum = 0;
+                        for (let j = 0; j < blockSize; j++) {
+                            sum += Math.abs(rawData[blockStart + j]);
+                        }
+                        filteredData.push(sum / blockSize);
+                    }
+                    
+                    const maxVal = Math.max(...filteredData);
+                    const normalizedData = filteredData.map(n => n / maxVal);
+                    
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = 'rgba(0, 150, 255, 0.8)';
+                    
+                    const barWidth = canvas.width / samples;
+                    
+                    normalizedData.forEach((value, i) => {
+                        const barHeight = value * canvas.height * 0.8;
+                        const x = i * barWidth;
+                        const y = (canvas.height - barHeight) / 2;
+                        ctx.fillRect(x, y, barWidth - 1, barHeight);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error drawing waveform:', error);
+                    drawPlaceholderWaveform(canvas);
+                });
+        }
+
+        // Play audio
+        function playAudio(url, index, row) {
+            // Stop current audio if playing
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                const prevRow = document.querySelector('tr.playing');
+                if (prevRow) {
+                    prevRow.classList.remove('playing');
+                    const prevIndex = prevRow.dataset.index;
+                    const prevStatus = document.getElementById(`status-${prevIndex}`);
+                    if (prevStatus) prevStatus.textContent = '⏸️ Ready';
+                }
+            }
+            
+            // If clicking the same row, just stop
+            if (currentAudio && audioElements[index] === currentAudio) {
+                currentAudio = null;
+                return;
+            }
+            
+            // Create or reuse audio element
+            if (!audioElements[index]) {
+                audioElements[index] = new Audio(url);
+                
+                audioElements[index].addEventListener('ended', function() {
+                    row.classList.remove('playing');
+                    const status = document.getElementById(`status-${index}`);
+                    if (status) status.textContent = '⏸️ Ready';
+                    if (currentAudio === audioElements[index]) {
+                        currentAudio = null;
+                    }
+                    statusDiv.textContent = 'Playback finished';
+                });
+            }
+            
+            currentAudio = audioElements[index];
+            currentAudio.play();
+            
+            row.classList.add('playing');
+            const status = document.getElementById(`status-${index}`);
+            if (status) status.textContent = '▶️ Playing';
+            statusDiv.textContent = `Playing: ${row.cells[0].textContent}`;
+        }
+
+        // Stop all button
+        stopBtn.addEventListener('click', function() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            
+            const playingRow = document.querySelector('tr.playing');
+            if (playingRow) {
+                playingRow.classList.remove('playing');
+                const index = playingRow.dataset.index;
+                const status = document.getElementById(`status-${index}`);
+                if (status) status.textContent = '⏸️ Ready';
+            }
+            
+            statusDiv.textContent = 'All audio stopped';
+        });
+
+        // Initialize on load
+        initializeSamples();
+    </script>
+</body>
+</html>
